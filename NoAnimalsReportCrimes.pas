@@ -9,7 +9,6 @@
 unit NoAnimalsReportCrimes;
 
 uses mteFunctions;
-uses 'Check For Errors';
 
 const
   cVer='1.00';
@@ -70,12 +69,11 @@ begin
   iniFile.Free;
 end;
 
-procedure ProcessFaction(e: IInterface);
+procedure ProcessFaction(e: IInterface; slMasters: TStringList);
 var
   sEdid: string;
   cDesiredFlags, cCurrentFlags, cNewFlags: Cardinal;
   rec: IInterface;
-  slMasters: TStringList;
 begin
   sEdid := EditorID(e);
   if slGeneralFactions.IndexOf(sEdid) <> -1 then
@@ -85,12 +83,9 @@ begin
   else
     exit;
     
-  slMasters := TStringList.Create;
-  AddMastersToList(iPatchFile, slMasters);
   AddMastersToList(GetFile(e), slMasters);
   AddMastersToFile(iPatchFile, slMasters, True);
-  slMasters.Free;
-  AddMessage(IntToHex(FormID(e),8));
+  
   try
     rec := wbCopyElementToFile(e, iPatchFile, False, True);
     cCurrentFlags := genv(rec, 'DATA\Flags');
@@ -101,7 +96,7 @@ begin
     begin
 			AddMessage(x.Message);
       AddMessage(cDashes);
-      CheckForErrors(0,e);
+      Check(e);
     end;
   end;
 end;
@@ -111,8 +106,10 @@ var
   f,g,e: IInterface;
   iFileIndex, iElementIndex: int;
   sFileName: string;
+  slMasters: TStringList;
 begin
-  for iFileIndex := Pred(FileCount) DownTo 0 do
+  slMasters := TStringList.Create;
+  for iFileIndex := Pred(GetLoadOrder(iPatchFile)) DownTo 0 do
   begin
     f := FileByIndex(iFileIndex);
     sFileName := GetFileName(f);
@@ -122,9 +119,10 @@ begin
     for iElementIndex := 0 to Pred(ElementCount(g)) do
     begin
       e := ElementByIndex(g,iElementIndex);
-      ProcessFaction(e);
+      ProcessFaction(e, slMasters);
     end;
   end;
+  slMasters.Free;
 end;
   
 procedure FreeMemory;
